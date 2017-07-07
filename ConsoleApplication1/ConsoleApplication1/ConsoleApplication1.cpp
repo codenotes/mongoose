@@ -10,12 +10,31 @@
 #include <string>
 #include <condition_variable>
 
+#include "GregWebServer.h"
 
+
+GREGWEBSERVER_INIT(3)
+
+int main(void)
+{
+	GregWebServer gw;
+	gw.Start("8000", 1,true);
+
+
+	return 0;
+}
+
+
+//static void ev_handler(struct mg_connection *nc, int ev, void *p) {
+//	if (ev == MG_EV_HTTP_REQUEST) {
+//		mg_serve_http(nc, (struct http_message *) p, s_http_server_opts);
+//	}
+//}
+
+#if 0
 using namespace std;
-
 static const char *s_http_port = "8000";
 static struct mg_serve_http_opts s_http_server_opts;
-
 std::mutex m;
 std::condition_variable cv;
 boost::circular_buffer<std::string> inbound_webrequest(3);
@@ -29,12 +48,12 @@ void gamethread()
 
 	for (;;)
 	{
-	//	cout << "checking..." << endl;
+		//	cout << "checking..." << endl;
 
 		//#event here: this would be replaced by an event that would be fired I think?  We need to pass info back to the caller.
-		if (!inbound_webrequest.empty()) 
+		if (!inbound_webrequest.empty())
 		{
-			cout << "FOUND (should see before awake):" << inbound_webrequest[0] << "threadid:"<< std::this_thread::get_id()<< endl;
+			cout << "FOUND (should see before awake):" << inbound_webrequest[0] << "threadid:" << std::this_thread::get_id() << endl;
 			inbound_webrequest.pop_front();
 			outbound_webrequest.push_back("outbound data");
 			cv.notify_one();
@@ -49,14 +68,9 @@ void gamethread()
 void what_thread()
 {
 	std::thread::id this_id = std::this_thread::get_id();
-	cout << __FUNCTION__<<"***"<<this_id << endl;
+	cout << __FUNCTION__ << "***" << this_id << endl;
 
 }
-
-
-
-
-
 
 static void ev_handler(struct mg_connection *c, int ev, void *p)
 {
@@ -66,32 +80,32 @@ static void ev_handler(struct mg_connection *c, int ev, void *p)
 
 	if (ev == MG_EV_HTTP_REQUEST)
 	{
-//#define OLD_WAY
+		//#define OLD_WAY
 #ifdef OLD_WAY
 		inbound_webrequest.push_back("requestmade");
 		cv.wait(lk);
 		cout << "----->AWAKE!, ev handler called...thread:" << std::this_thread::get_id() << endl;
-		
+
 
 		mg_send_head(c, 200, hm->message.len, "Content-Type: text/plain");
 		//mg_send(c, "test", 4);
 		//mg_printf(c, "%.*s", hm->message.len, hm->message.p);//works
 		cout << "len:" << hm->message.len << endl; // " " << hm.message.
 		mg_printf(c, "%s", hm->message.p); //works
-		
+
 #elif USE_CHUNK //works
 		/* Get form variables */ //if we are doing that, here for reference
-		/*mg_get_http_var(&hm->body, "n1", n1, sizeof(n1));
-		mg_get_http_var(&hm->body, "n2", n2, sizeof(n2));*/
-/*
-		char post_data[10 * 1024];
-		int post_data_len = mg_read(conn, post_data, sizeof(post_data));
+								 /*mg_get_http_var(&hm->body, "n1", n1, sizeof(n1));
+								 mg_get_http_var(&hm->body, "n2", n2, sizeof(n2));*/
+								 /*
+								 char post_data[10 * 1024];
+								 int post_data_len = mg_read(conn, post_data, sizeof(post_data));
 
-		char param1[1024];
-		char param2[1024];
+								 char param1[1024];
+								 char param2[1024];
 
-		mg_get_var(post_data, post_data_len, "param1", param1, sizeof(param1));
-		mg_get_var(post_data, post_data_len, "param2", param2, sizeof(param2));*/
+								 mg_get_var(post_data, post_data_len, "param1", param1, sizeof(param1));
+								 mg_get_var(post_data, post_data_len, "param2", param2, sizeof(param2));*/
 
 
 		mg_printf(c, "%s", "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
@@ -108,7 +122,7 @@ static void ev_handler(struct mg_connection *c, int ev, void *p)
 		const struct mg_str *body =
 			hm->query_string.len > 0 ? &hm->query_string : &hm->body;
 		mg_get_http_var(body, "greg", value, sizeof(value));
-		cout << "!" << value<<endl;
+		cout << "!" << value << endl;
 
 		size_t len = (size_t)hm->uri.len;
 		memcpy(value, hm->uri.p, len);
@@ -122,7 +136,7 @@ static void ev_handler(struct mg_connection *c, int ev, void *p)
 
 		//mg_send_head(c, 200, hm->message.len, "Content-Type: text/plain");
 		//mg_printf(c, "%s", "test"); 
-		mg_printf(c, "HTTP/1.0 200 OK\r\n\r\n%s",  s.c_str());
+		mg_printf(c, "HTTP/1.0 200 OK\r\n\r\n%s", s.c_str());
 		c->flags |= MG_F_SEND_AND_CLOSE;
 
 
@@ -130,35 +144,35 @@ static void ev_handler(struct mg_connection *c, int ev, void *p)
 
 
 		/*char addr[32];
-		
+
 		cs_stat_t st;
 		mg_sock_addr_to_str(&c->sa, addr, sizeof(addr),
-			MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);*/
+		MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);*/
 		//LOG(LL_INFO,		("HTTP request from %s: %.*s %.*s", addr, (int)hm->method.len,
 		//		hm->method.p, (int)hm->uri.len, hm->uri.p));
 
-	//	mg_send(c, "hithere", strlen("hithere"));
-	//	c->flags |= MG_F_SEND_AND_CLOSE;
+		//	mg_send(c, "hithere", strlen("hithere"));
+		//	c->flags |= MG_F_SEND_AND_CLOSE;
 
 
-	/*	mg_printf(c,"%s",
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/html\r\n\r\n"
-			"<html>\r\n"
-			"<body>\r\n"
-			"Hello, World!\r\n"
-			"</body>\r\n"
-			"</html>\r\n"
+		/*	mg_printf(c,"%s",
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/html\r\n\r\n"
+		"<html>\r\n"
+		"<body>\r\n"
+		"Hello, World!\r\n"
+		"</body>\r\n"
+		"</html>\r\n"
 		);*/
 
-	//	string s;
-	//	s = hm->message.p;
-//		cout << s << endl;
+		//	string s;
+		//	s = hm->message.p;
+		//		cout << s << endl;
 
-	//	mg_printf(c, "%s", "boobs!");
+		//	mg_printf(c, "%s", "boobs!");
 
-	//	s = outbound_webrequest[0];
-	//	outbound_webrequest.pop_front();
+		//	s = outbound_webrequest[0];
+		//	outbound_webrequest.pop_front();
 
 		//mg_printf(c, "%.*s", s.size(), s.c_str());
 
@@ -186,10 +200,10 @@ int main(void) {
 
 	mg_mgr_init(&mgr, NULL);
 	printf("Starting web server on port %s\n", s_http_port);
-	
-	nc = mg_bind(&mgr, s_http_port,  ev_handler);
-	
-	
+
+	nc = mg_bind(&mgr, s_http_port, ev_handler);
+
+
 	if (nc == NULL) {
 		printf("Failed to create listener\n");
 		return 1;
@@ -200,10 +214,10 @@ int main(void) {
 	//s_http_server_opts.document_root = ".";  // Serve current directory
 	//s_http_server_opts.enable_directory_listing = "yes";
 	std::thread gthread(gamethread);
-	
+
 	std::this_thread::sleep_for(1s);
 
-	std::thread t1(web_poll,mgr);
+	std::thread t1(web_poll, mgr);
 	t1.join();
 
 	mg_mgr_free(&mgr);
@@ -211,13 +225,5 @@ int main(void) {
 	return 0;
 }
 
+#endif
 
-
-
-
-
-//static void ev_handler(struct mg_connection *nc, int ev, void *p) {
-//	if (ev == MG_EV_HTTP_REQUEST) {
-//		mg_serve_http(nc, (struct http_message *) p, s_http_server_opts);
-//	}
-//}
