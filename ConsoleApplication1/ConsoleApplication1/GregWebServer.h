@@ -6,8 +6,12 @@
 #include <boost/circular_buffer.hpp>
 #include <string>
 #include <condition_variable>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <map>
+#include <vector>
 
-
+typedef boost::function<void(struct mg_connection *nc , struct http_message *)> _requestFunction;
 
 class GregWebServer
 {
@@ -20,13 +24,54 @@ class GregWebServer
 	static int gameThreadTimePause ;
 	static std::condition_variable cv;
 	static struct mg_mgr mgr;
-	static struct mg_connection *nc;
+	static struct mg_connection *mNc;
 	static bool bShutdown;
+
+	static std::vector<std::string> methods;
+	static std::map<std::string, _requestFunction> apiToFunction;
+	static std::map<std::string, std::string > getGetValues(std::vector<std::string>  & invec, http_message * hm)
+	{
+		char value[512];
+		struct mg_str *body;
+		//std::pair<std::string, std::string> pr;
+		std::map<std::string, std::string>  temp;
+
+		for (auto v : invec)
+		{
+			body=hm->query_string.len > 0 ? &hm->query_string : &hm->body;
+			mg_get_http_var(body, v.c_str(), value, sizeof(value));
+			temp[v]= value;
+		}
+
+		return temp;
+
+	}
+
+
+
+	static std::string getOneGet(std::string name , http_message * hm)
+	{
+		std::vector<std::string> v;
+		v.push_back(name);
+		auto vv = getGetValues(v, hm);
+		return vv[name];
+
+	}
 
 	static void what_thread()
 	{
 		std::thread::id this_id = std::this_thread::get_id();
 		std::cout << __FUNCTION__ << "***" << this_id << std::endl;
+
+	}
+
+	static bool dispatchMethod(std::string methodAsUri, struct mg_connection * nc, http_message * hm)
+	{
+		if (apiToFunction.find(methodAsUri) == apiToFunction.end()) return false;
+		auto f = apiToFunction[methodAsUri];
+
+		f(nc,hm); //call the correct function for this API/URI
+		return true;
 
 	}
 
@@ -130,7 +175,7 @@ class GregWebServer
 		 sprintf(uri, "%.*s", (int)hm->uri.len, hm->uri.p);
 		 std::cout << "uri:" << uri << std::endl;
 
-		 if (strcmp(uri, "/api")==0)
+		/* if (strcmp(uri, "/api")==0)
 		 {
 
 
@@ -155,22 +200,34 @@ class GregWebServer
 			 
 			 nc->flags |= MG_F_SEND_AND_CLOSE;
 
-		 }
-		 else //return just the base page
+		 }*/
+		 if (!dispatchMethod(uri,nc,hm))//returns true if there was a handler, false if there wasn't
 		 {
-
-			 mg_http_serve_file(nc, hm, "c:\\temp\\test.html",
-				 mg_mk_str("text/html"), mg_mk_str(""));
-			 nc->flags |= MG_F_SEND_AND_CLOSE;
-
+			 printf("seems to be no handler for %s, just send the main page\n", uri);
+			  mg_http_serve_file(nc, hm, "c:\\temp\\test.html",
+			 	 mg_mk_str("text/html"), mg_mk_str(""));
+			  nc->flags |= MG_F_SEND_AND_CLOSE;
+			 return;
 
 		 }
+
+		 //else //return just the base page
+		 //{
+
+			// mg_http_serve_file(nc, hm, "c:\\temp\\test.html",
+			//	 mg_mk_str("text/html"), mg_mk_str(""));
+			// nc->flags |= MG_F_SEND_AND_CLOSE;
+
+
+		 //}
 
 
 
 
 		
 	 }
+
+	 
 
 	static void ev_handler(struct mg_connection *nc, int ev, void *p)
 	{
@@ -208,16 +265,6 @@ class GregWebServer
 	
 
 
-
-
-
-		
-
-
-	
-
-
-
 	static void gamethread()
 	{
 
@@ -242,9 +289,17 @@ class GregWebServer
 	}
 
 
-
-
 public:
+
+	static void addApiURIHandler(std::string methodName, _requestFunction rf)
+	{
+		apiToFunction[methodName] = rf;
+	}
+
+
+	
+
+
 	GregWebServer::GregWebServer()
 	{
 
@@ -270,16 +325,17 @@ public:
 		mg_mgr_init(&mgr, NULL);
 		printf("Starting web server on port %s\n", s_http_port.c_str());
 
-		nc = mg_bind(&mgr, s_http_port.c_str(), ev_handler);
+		mNc = mg_bind(&mgr, s_http_port.c_str(), ev_handler);
 
 
-		if (nc == NULL) {
+		if (mNc == NULL) 
+		{
 			printf("Failed to create listener\n");
 			return 1;
 		}
 
 		// Set up HTTP server parameters
-		mg_set_protocol_http_websocket(nc);
+		mg_set_protocol_http_websocket(mNc);
 		//s_http_server_opts.document_root = ".";  // Serve current directory
 		//s_http_server_opts.enable_directory_listing = "yes";
 
@@ -310,7 +366,9 @@ std::string GregWebServer::s_http_port = "8000"; \
 int GregWebServer::gameThreadTimePause = 1; \
 std::condition_variable GregWebServer::cv; \
 struct mg_mgr GregWebServer::mgr; \
-struct mg_connection *GregWebServer::nc; \
-bool GregWebServer::bShutdown=false;
+struct mg_connection *GregWebServer::mNc; \
+bool GregWebServer::bShutdown=false; \
+std::map<std::string, _requestFunction> GregWebServer::apiToFunction;\
+std::vector<std::string> GregWebServer::methods;
 
 

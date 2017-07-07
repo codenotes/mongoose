@@ -15,9 +15,54 @@
 
 GREGWEBSERVER_INIT(3)
 
+///favicon.ico
+
+void favicon(struct mg_connection *nc, struct http_message * hm)
+{
+	mg_http_serve_file(nc, hm, "c:\\temp\\favicon.ico",
+		mg_mk_str("image/x-icon"), mg_mk_str(""));
+	nc->flags |= MG_F_SEND_AND_CLOSE;
+
+}
+
+void sampleDispatchFunction(struct mg_connection *nc , struct http_message * hm)
+{
+
+	printf("sampel dispatch /api2 \n");
+	char addr[32];
+	if (!nc)
+	{
+		printf("strange...nc is null...\n");
+	}
+
+	mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
+		MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
+
+	char value[200];
+	const struct mg_str *body =
+		hm->query_string.len > 0 ? &hm->query_string : &hm->body;
+
+	mg_get_http_var(body, "greg", value, sizeof(value));
+	std::cout << "!" << value << std::endl;
+
+	mg_send_response_line(nc, 200,
+		"Content-Type: text/html\r\n"
+		"Connection: close");
+	mg_printf(nc,
+		"\r\n<h1>API2 CALL, %s!</h1>\r\n"
+		"You asked for %.*s, arg was:%s\r\n",
+		addr, (int)hm->uri.len, hm->uri.p, value);
+
+
+	nc->flags |= MG_F_SEND_AND_CLOSE;
+}
+
 int main(void)
 {
 	GregWebServer gw;
+	gw.addApiURIHandler("/api2",sampleDispatchFunction);
+	gw.addApiURIHandler("/favicon.ico", favicon);
+
 	gw.Start("8000", 1,true);
 
 
