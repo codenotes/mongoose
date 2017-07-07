@@ -121,25 +121,54 @@ class GregWebServer
 		 mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
 			 MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
 
-		 char value[200];
-		 const struct mg_str *body =
-			 hm->query_string.len > 0 ? &hm->query_string : &hm->body;
-
-		 mg_get_http_var(body, "greg", value, sizeof(value));
-		 std::cout << "!" << value << std::endl;
-
-
+	
 
 		 printf("%p: %.*s %.*s\r\n", nc, (int)hm->method.len, hm->method.p,
 			 (int)hm->uri.len, hm->uri.p);
-		 mg_send_response_line(nc, 200,
-			 "Content-Type: text/html\r\n"
-			 "Connection: close");
-		 mg_printf(nc,
-			 "\r\n<h1>Hello, %s!</h1>\r\n"
-			 "You asked for %.*s\r\n",
-			 addr, (int)hm->uri.len, hm->uri.p);
-		 nc->flags |= MG_F_SEND_AND_CLOSE;
+
+		 char uri[255];
+		 sprintf(uri, "%.*s", (int)hm->uri.len, hm->uri.p);
+		 std::cout << "uri:" << uri << std::endl;
+
+		 if (strcmp(uri, "/api")==0)
+		 {
+
+
+			 char value[200];
+			 const struct mg_str *body =
+				 hm->query_string.len > 0 ? &hm->query_string : &hm->body;
+
+			 mg_get_http_var(body, "greg", value, sizeof(value));
+			 std::cout << "!" << value << std::endl;
+
+
+			 mg_send_response_line(nc, 200,
+				 "Content-Type: text/html\r\n"
+				 "Connection: close");
+			 mg_printf(nc,
+				 "\r\n<h1>API CALL, %s!</h1>\r\n"
+				 "You asked for %.*s, arg was:%s\r\n",
+				 addr, (int)hm->uri.len, hm->uri.p, value);
+			 
+			 
+			 
+			 
+			 nc->flags |= MG_F_SEND_AND_CLOSE;
+
+		 }
+		 else //return just the base page
+		 {
+
+			 mg_http_serve_file(nc, hm, "c:\\temp\\test.html",
+				 mg_mk_str("text/html"), mg_mk_str(""));
+			 nc->flags |= MG_F_SEND_AND_CLOSE;
+
+
+		 }
+
+
+
+
 		
 	 }
 
