@@ -1,0 +1,61 @@
+<html>
+<head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script type="text/javascript">
+
+
+
+         function sayHello()
+         {
+            document.write ("Hello there!");
+         }
+
+
+
+		  function fun3()
+		  {
+		$.ajax({
+			type: "GET",
+			url: "http://localhost:8000/api2?greg=boob",
+			dataType: "text"
+		}).done(function (res) {
+			document.write (res);
+		}).fail(function (jqXHR, textStatus, errorThrown) {
+			alert("AJAX call failed: " + textStatus + ", " + errorThrown);
+		});
+		 }
+
+		 function fun4()
+		 {
+
+				$.ajax({
+				type: "GET",
+				url: "http://localhost:8000?greg=boob",
+					data: "{}",
+					dataType: "text",
+					success: function( data ) {
+
+				//	document.write (data);
+
+					}
+
+
+
+			});
+
+
+		 }
+
+    </script>
+
+</head>
+<body>
+    <p>Click the following button to call the function</p>
+
+    <form>
+        <input type="button" onclick="fun3()" value="Say Hello4">
+    </form>
+
+    <p>Use different text in write method and then try...</p>
+</body>
+</html>

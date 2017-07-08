@@ -60,10 +60,11 @@ void sampleDispatchFunction(struct mg_connection *nc , struct http_message * hm)
 int main(void)
 {
 	GregWebServer gw;
+	gw.setDefaultPage("c:\\temp\\test.html");
 	gw.addApiURIHandler("/api2",sampleDispatchFunction);
 	gw.addApiURIHandler("/favicon.ico", favicon);
 
-	gw.Start("8000", 1,true);
+	gw.Start("8000", 500,true);
 
 
 	return 0;

@@ -26,6 +26,7 @@ class GregWebServer
 	static struct mg_mgr mgr;
 	static struct mg_connection *mNc;
 	static bool bShutdown;
+	static std::string defaultPage;
 
 	static std::vector<std::string> methods;
 	static std::map<std::string, _requestFunction> apiToFunction;
@@ -204,7 +205,7 @@ class GregWebServer
 		 if (!dispatchMethod(uri,nc,hm))//returns true if there was a handler, false if there wasn't
 		 {
 			 printf("seems to be no handler for %s, just send the main page\n", uri);
-			  mg_http_serve_file(nc, hm, "c:\\temp\\test.html",
+			  mg_http_serve_file(nc, hm, defaultPage.c_str(),
 			 	 mg_mk_str("text/html"), mg_mk_str(""));
 			  nc->flags |= MG_F_SEND_AND_CLOSE;
 			 return;
@@ -291,6 +292,12 @@ class GregWebServer
 
 public:
 
+	static void setDefaultPage(std::string defPage)
+	{
+		defaultPage = defPage;
+
+	}
+
 	static void addApiURIHandler(std::string methodName, _requestFunction rf)
 	{
 		apiToFunction[methodName] = rf;
@@ -316,7 +323,7 @@ public:
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 		mg_mgr_free(&mgr);
 	}
-
+	//msecs
 	static int Start(std::string port, int gameThreadPollTime, bool doThreadJoin=false)
 	{
 		s_http_port = port;
@@ -369,6 +376,7 @@ struct mg_mgr GregWebServer::mgr; \
 struct mg_connection *GregWebServer::mNc; \
 bool GregWebServer::bShutdown=false; \
 std::map<std::string, _requestFunction> GregWebServer::apiToFunction;\
+std::string GregWebServer::defaultPage; \
 std::vector<std::string> GregWebServer::methods;
 
 
