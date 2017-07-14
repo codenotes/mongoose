@@ -57,8 +57,21 @@ void sampleDispatchFunction(struct mg_connection *nc , struct http_message * hm)
 	nc->flags |= MG_F_SEND_AND_CLOSE;
 }
 
+
+
+#include <iostream>
+
+#if 0
+#define TEST(X) printf("%d\n",X);
+#else	
+#define TEST(X)
+#endif
+
 int main(void)
 {
+
+	TEST(2);
+	return 0;
 	GregWebServer gw;
 	gw.setDefaultPage("c:\\temp\\test.html");
 	gw.addApiURIHandler("/api2",sampleDispatchFunction);
