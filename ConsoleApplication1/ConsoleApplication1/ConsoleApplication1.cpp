@@ -9,9 +9,11 @@
 #include <boost/circular_buffer.hpp>
 #include <string>
 #include <condition_variable>
+#include <boost/algorithm/string.hpp>
+#include <vector>
 
 #include "GregWebServer.h"
-
+using namespace std;
 
 GREGWEBSERVER_INIT(3)
 
@@ -42,6 +44,23 @@ void sampleDispatchFunction(struct mg_connection *nc , struct http_message * hm)
 	const struct mg_str *body =
 		hm->query_string.len > 0 ? &hm->query_string : &hm->body;
 
+	std::string qs = *weirdoString((char*)(hm->query_string.p), (int)hm->query_string.len);
+	GLOGW("QUERYSTRING:%s", qs.c_str());
+	vector<string> tokens;
+	boost::split(tokens, qs, boost::is_any_of("=&"));
+	int i = 0;
+	for (auto beg = tokens.begin(); beg != tokens.end(); ++beg) 
+	{
+		if(i%2)
+			GLOGW("VALUE:%s", (*beg).c_str());
+		else
+			GLOGW("KEY:%s", (*beg).c_str());
+		//cout << *beg << endl;
+		i++;
+	}
+
+
+
 	mg_get_http_var(body, "greg", value, sizeof(value));
 	std::cout << "!" << value << std::endl;
 
@@ -70,14 +89,13 @@ void sampleDispatchFunction(struct mg_connection *nc , struct http_message * hm)
 int main(void)
 {
 
-	TEST(2);
-	return 0;
+
 	GregWebServer gw;
 	gw.setDefaultPage("c:\\temp\\test.html");
 	gw.addApiURIHandler("/api2",sampleDispatchFunction);
 	gw.addApiURIHandler("/favicon.ico", favicon);
 
-	gw.Start("8000", 500,true);
+	gw.Start("8000", 0,true,true);
 
 
 	return 0;
