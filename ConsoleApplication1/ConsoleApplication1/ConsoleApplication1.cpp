@@ -95,7 +95,7 @@ int main(void)
 	gw.addApiURIHandler("/api2",sampleDispatchFunction);
 	gw.addApiURIHandler("/favicon.ico", favicon);
 
-	gw.Start("8000", 0,true,true);
+	gw.Start("8000", 100,true,true);
 
 
 	return 0;
